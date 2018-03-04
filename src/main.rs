@@ -63,9 +63,9 @@ fn run() -> Result<(), coreaudio::Error> {
 
     let mut keys: HashMap<Key, f64> = HashMap::new();
     keys.insert(Key::A, 261.6); // C
-    keys.insert(Key::W, 277.2); // C#
+    keys.insert(Key::Q, 277.2); // C#
     keys.insert(Key::S, 293.7); // D
-    keys.insert(Key::E, 311.1); // D#
+    keys.insert(Key::W, 311.1); // D#
     keys.insert(Key::D, 329.6); // E
     keys.insert(Key::F, 349.2); // F
     keys.insert(Key::R, 370.0); // F#
