@@ -1,0 +1,9 @@
+[package]
+name = "coreaudio"
+version = "0.1.0"
+authors = ["Edwin Amsler <edwinguy@gmail.com>"]
+
+[dependencies]
+coreaudio-rs = "0.9.0"
+piston_window = "0.77.0"
+rand = "0.4"
