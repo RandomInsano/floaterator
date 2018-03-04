@@ -23,7 +23,7 @@ fn main() {
 fn run() -> Result<(), coreaudio::Error> {
     let mut freq = controls::Knob::new(440.0);
     let volume = controls::Knob::new(1.0);
-    let sustain = controls::Knob::new(0.6);
+    let sustain = controls::Knob::new_clamped(0.6, 0.0, 1.0);
 
     let generator = Arc::new(RwLock::new(generators::GenSine::new(freq.clone())));
     let envelope = Arc::new(RwLock::new(filters::FilterADSR::new(generator, 200.0, 10.0, 0.6, 100.0)));
