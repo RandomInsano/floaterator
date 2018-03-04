@@ -1,4 +1,3 @@
-//! A basic output stream example, using an Output AudioUnit to generate a sine wave.
 
 extern crate coreaudio;
 extern crate piston_window;
@@ -28,6 +27,10 @@ fn run() -> Result<(), coreaudio::Error> {
     let generator = Arc::new(RwLock::new(generators::GenSine::new(freq.clone())));
     let envelope = Arc::new(RwLock::new(filters::FilterADSR::new(generator, 200.0, 10.0, 0.6, 100.0)));
     let mut samples = filters::FilterVolume::new(envelope.clone(), volume.clone());
+
+
+
+
 
     // Construct an Output audio unit that delivers audio to the default output device.
     let mut audio_unit = try!(AudioUnit::new(IOType::DefaultOutput));
