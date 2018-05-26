@@ -1,12 +1,18 @@
+/// Knobs are a linear control that can be plugged into various components. They're thread-safe
+/// underneath so you can share them all over the place.
+
 use std;
 use std::sync::{Arc, RwLock};
 
+/// A Knob
 pub struct Knob {
     value: Arc<RwLock<f64>>,
     max: Arc<RwLock<f64>>,
     min: Arc<RwLock<f64>>,
 }
 
+/// Allow making copies of Knobs. There are Arcs underneath so when sharing a
+/// copied Knob, a change to one will change them all.
 impl Clone for Knob {
     fn clone(&self) -> Self {
         Knob {
@@ -18,6 +24,7 @@ impl Clone for Knob {
 }
 
 impl Knob {
+    /// Create a brand-new shiny Knob.
     pub fn new(value: f64) -> Self {
         Knob {
             value: Arc::new(RwLock::new(value)),
@@ -26,6 +33,8 @@ impl Knob {
         }
     }
 
+    /// Create a specific brand-new shiny Knob that won't allow values to be
+    /// provided that are above `max` or below `min`.
     pub fn new_clamped(value: f64, max: f64, min: f64) -> Self {
         Knob {
             value: Arc::new(RwLock::new(value)),
@@ -34,10 +43,15 @@ impl Knob {
         }
     }
 
+    /// Get the current value of the Knob
     pub fn read(&self) -> f64 {
         *self.value.read().unwrap()
     }
 
+    /// Set the current value. Note that if you enter a value outside
+    /// of what `max` and `min` will allow, the input number will be silently
+    /// clamped. There are also compile-time errors to save you from being
+    /// silly in your code.
     pub fn write(&mut self, mut value: f64) {
         let max = self.get_max();
         let min = self.get_min();
