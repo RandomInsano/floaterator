@@ -1,5 +1,5 @@
 [package]
-name = "coreaudio"
+name = "sound_floaterator"
 version = "0.1.0"
 authors = ["Edwin Amsler <edwinguy@gmail.com>"]
 
