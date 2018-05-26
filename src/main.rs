@@ -9,7 +9,6 @@ mod controls;
 mod filters;
 
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
 use piston_window::*;
 
 use coreaudio::audio_unit::{AudioUnit, IOType, SampleFormat};
@@ -24,10 +23,11 @@ fn run() -> Result<(), coreaudio::Error> {
     let mut freq = controls::Knob::new(440.0);
     let volume = controls::Knob::new(1.0);
     let sustain = controls::Knob::new_clamped(0.6, 0.0, 1.0);
+    let play_note = controls::Switch::new();
 
-    let generator = Arc::new(RwLock::new(generators::GenSaw::new(freq.clone())));
-    let envelope = Arc::new(RwLock::new(filters::FilterADSR::new(generator, 200.0, 10.0, 0.6, 500.0)));
-    let mut samples = filters::FilterVolume::new(envelope.clone(), volume.clone());
+    let generator = generators::GenSaw::new(freq.clone());
+    let mut envelope = filters::FilterADSR::new(generator, play_note.clone(), 200.0, 10.0, 0.6, 500.0);
+    let mut samples = filters::FilterVolume::new(envelope, volume.clone());
 
 
 
@@ -87,13 +87,13 @@ fn run() -> Result<(), coreaudio::Error> {
             if let Some(x) = keys.get(&key) {
                 freq.write(*x);
 
-                envelope.write().unwrap().press();
+                play_note.set(true);
             }
         }
         if let Some(Button::Keyboard(_key)) = e.release_args() {
             //println!("Released keyboard key '{:?}'", key);
 
-            envelope.write().unwrap().release();
+            play_note.set(false);
         }        
     }
 

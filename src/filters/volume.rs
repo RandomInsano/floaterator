@@ -1,8 +1,6 @@
-use std::sync::{Arc, RwLock};
-
 use super::super::controls::Knob;
 
-type FloatStream = Arc<RwLock<Iterator<Item=f64>>>;
+type FloatStream = Box<Iterator<Item=f64>>;
 
 pub struct FilterVolume {
     generator: FloatStream,
@@ -22,7 +20,7 @@ impl Iterator for FilterVolume {
     type Item = f64;
 
     fn next(&mut self) -> Option<f64> {
-        if let Some(x) = self.generator.write().unwrap().next() {
+        if let Some(x) = self.generator.next() {
             return Some(x * self.value.read())
         }
 

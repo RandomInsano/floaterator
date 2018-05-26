@@ -1,6 +1,6 @@
-use std::sync::{Arc, RwLock};
+type FloatStream = Box<Iterator<Item=f64>>;
 
-type FloatStream = Arc<RwLock<Iterator<Item=f64>>>;
+use controls::Switch;
 
 #[derive(Debug)]
 enum ADSRState {
@@ -20,6 +20,8 @@ enum ADSRState {
 /// being how long the part of the note should ring in or out for
 pub struct FilterADSR {
     state: ADSRState,
+    /// When this switch is turned on, play a note
+    play: Switch,
     /// This is essentially our X for line drawing. Always starts at zero.
     counter: f64,
     /// This is our M for line drawing
@@ -45,9 +47,10 @@ impl FilterADSR {
         (endy - starty) / (endx - startx)
     }
 
-    pub fn new(generator: FloatStream, a: f64, d: f64, s: f64, r: f64) -> Box<FilterADSR> {
+    pub fn new(generator: FloatStream, play: Switch, a: f64, d: f64, s: f64, r: f64) -> Box<FilterADSR> {
         let a = FilterADSR {
             state: ADSRState::Idle,
+            play: play,
             counter: 0.0,
             current_slope: 0.0,
             current_offset: 0.0,
@@ -64,27 +67,27 @@ impl FilterADSR {
 
         Box::new(a)
     }
-
-    pub fn press(&mut self) {
-        self.state = ADSRState::Start;
-    }
-
-    pub fn release(&mut self) {
-        self.allow_release = true;
-    }
 }
 impl Iterator for FilterADSR {
     type Item = f64;
 
     fn next(&mut self) -> Option<f64> {
-        match self.state { 
-            // If there's nothing to do here, bail out fast and don't pull
-            // from the iterator
-            ADSRState::Idle => return Some(0.0),
-            _ => {}
+        match self.state {
+            ADSRState::Idle => {
+                if self.play.get() {
+                    self.state = ADSRState::Start;
+                }
+
+                return Some(0.0)
+            },
+            _ => {
+                if !self.play.get() {
+                    self.allow_release = true;
+                }
+            }
         }
 
-        if let Some(x) = self.generator.write().unwrap().next() {
+        if let Some(x) = self.generator.next() {
             match self.state {
                 ADSRState::Start => {
                     self.state = ADSRState::Attack;

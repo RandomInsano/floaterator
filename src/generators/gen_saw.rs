@@ -6,15 +6,13 @@ pub struct GenSaw {
 }
 
 impl GenSaw {
-    pub fn new(freq: Knob) -> Self {
-        Self {
+    pub fn new(freq: Knob) -> Box<Self> {
+        let a = Self {
             value: 0.0,
             freq: freq,
-        }
-    }
+        };
 
-    fn get_freq(&self) -> f64 {
-        self.freq.read()
+        Box::new(a)
     }
 }
 
