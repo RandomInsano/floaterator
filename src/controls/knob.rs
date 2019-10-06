@@ -2,7 +2,10 @@
 /// underneath so you can share them all over the place.
 
 use std;
-use std::sync::{Arc, RwLock};
+use std::sync::{
+    Arc,
+    RwLock
+};
 
 /// A Knob
 pub struct Knob {

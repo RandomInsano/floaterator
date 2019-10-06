@@ -1,25 +1,38 @@
 /// Some documentation testing is going on here right now.
 
-extern crate coreaudio;
-extern crate piston_window;
+extern crate cpal;
 extern crate rand;
+extern crate pscontroller_rs;
+extern crate futures;
 
 mod generators;
 mod controls;
 mod filters;
 
-use std::collections::HashMap;
-use piston_window::*;
-
-use coreaudio::audio_unit::{AudioUnit, IOType, SampleFormat};
-use coreaudio::audio_unit::render_callback::{self, data};
+use std::{
+    collections::HashMap,
+    thread,
+    sync::{
+        Arc,
+        Mutex,
+        RwLock
+    }
+};
+use futures::{
+    channel::mpsc,
+    Async,
+    Future,
+    Sink,
+    Stream
+};
+use cpal::{
+    EventLoop,
+    StreamData,
+    UnknownTypeOutputBuffer
+};
 
 
 fn main() {
-    run().unwrap()
-}
-
-fn run() -> Result<(), coreaudio::Error> {
     let mut freq = controls::Knob::new(440.0);
     let volume = controls::Knob::new(1.0);
     let sustain = controls::Knob::new_clamped(0.6, 0.0, 1.0);
@@ -29,43 +42,47 @@ fn run() -> Result<(), coreaudio::Error> {
     let mut envelope = filters::FilterADSR::new(generator, play_note.clone(), 200.0, 10.0, 0.6, 500.0);
     let mut samples = filters::FilterVolume::new(envelope, volume.clone());
 
+    let samples = Arc::new(RwLock::new(samples));
 
+    let (tx_sound, rx_sound) = mpsc::channel(1000);
 
+    // Cpal goodies (stolen straight from the example docs. :D)
+    let event_loop = EventLoop::new();
+    let device = cpal::default_output_device()
+        .expect("no output device available");
+    let format = device.default_output_format()
+        .expect("error while querying formats");
+    let stream = event_loop
+        .build_output_stream(&device, &format)
+        .unwrap();
 
+    let mut forever = std::iter::repeat(3.0 as f32);
 
-    // Construct an Output audio unit that delivers audio to the default output device.
-    let mut audio_unit = try!(AudioUnit::new(IOType::DefaultOutput));
-
-    let stream_format = try!(audio_unit.output_stream_format());
-    println!("{:#?}", &stream_format);
-
-    // For this example, our sine wave expects `f32` data.
-    assert!(SampleFormat::F32 == stream_format.sample_format);
-
-    type Args = render_callback::Args<data::NonInterleaved<f32>>;
-    try!(audio_unit.set_render_callback(move |args| {
-        let Args { num_frames, mut data, .. } = args;
-        for i in 0..num_frames {
-            let sample = samples.next().unwrap() as f32;
-            for channel in data.channels_mut() {
-                channel[i] = sample;
-            }
+    thread::spawn(move|| {
+        loop {
+            tx_sound.send(forever.next()).wait();
         }
-        Ok(())
-    }));
-    try!(audio_unit.start());
+    });
+
+    event_loop.play_stream(stream);
+
+    event_loop.run(move |_stream_id, data| {
+        match data {
+            cpal::StreamData::Output { buffer: cpal::UnknownTypeOutputBuffer::F32(mut buffer) } => {
+                for sample in buffer.chunks_mut(format.channels as usize) {
+                    for out in sample.iter_mut() {
+                        *out = rx_sound.try_next().unwrap().expect("?!")
+                    }
+                }
+            },
+            _ => (),
+        }
+    });
 
 
-
-    let mut window: PistonWindow = WindowSettings::new(
-        "Audio Thing",
-        [300, 300]
-    )
-    .exit_on_esc(true)
-    .build()
-    .unwrap();
-
+    /*
     let mut keys: HashMap<Key, f64> = HashMap::new();
+
     keys.insert(Key::A, 261.6); // C
     keys.insert(Key::Q, 277.2); // C#
     keys.insert(Key::S, 293.7); // D
@@ -80,22 +97,11 @@ fn run() -> Result<(), coreaudio::Error> {
     keys.insert(Key::J, 493.9); // B
     keys.insert(Key::K, 523.3); // C
 
-    let mut events = Events::new(EventSettings::new().lazy(true));
-    while let Some(e) = events.next(&mut window) {
-        if let Some(Button::Keyboard(key)) = e.press_args() {
-            //println!("Pressed keyboard key '{:?}'", key);
-            if let Some(x) = keys.get(&key) {
-                freq.write(*x);
 
-                play_note.set(true);
-            }
-        }
-        if let Some(Button::Keyboard(_key)) = e.release_args() {
-            //println!("Released keyboard key '{:?}'", key);
+    freq.write(*x);
+    play_note.set(true);
+    play_note.set(false);
+    */
 
-            play_note.set(false);
-        }        
-    }
 
-    Ok(())
 }

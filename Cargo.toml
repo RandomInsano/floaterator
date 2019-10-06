@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["Edwin Amsler <edwinguy@gmail.com>"]
 
 [dependencies]
-coreaudio-rs = "0.9.0"
-piston_window = "0.77.0"
+cpal = "0.8"
 rand = "0.4"
+pscontroller-rs = "0.5"
+futures-preview = "0.2.1"
